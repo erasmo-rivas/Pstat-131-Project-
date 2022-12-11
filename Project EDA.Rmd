@@ -1,0 +1,276 @@
+---
+title: "work for project"
+author: "Erasmo Rivas"
+date: "2022-11-24"
+output: html_document
+---
+
+```{r}
+library(janitor)
+library(tidyverse)
+library(tidymodels)
+library(ISLR)
+library(glmnet)
+library(ISLR2)
+library(corrplot)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+tidymodels_prefer()
+```
+
+
+```{r}
+yelp_df <- read.csv("ProjectDatasetComplete.csv", stringsAsFactors = F) #%>% mutate(stars = factor(stars),is_open = factor(is_open), RestaurantsPriceRange2 = factor(RestaurantsPriceRange2))
+
+yelp_df <- select(yelp_df,-1,-2,-3)
+yelp_df
+
+?read.csv()
+
+
+```
+
+```{r}
+stars <- yelp_df %>% group_by(stars) %>% 
+  summarise(count = n())
+
+mean(yelp_df$stars)
+median(yelp_df$stars)
+stars
+
+barplot(stars$count, names.arg = stars$stars, cex.axis = 0.9, xlab = "Stars", ylab ="Frequency", main = "Distribution of Ratings")
+
+
+```
+From the above barplot we see that the a review of 4 stars is the most common. The mean = 3.538812 the median = 3.5.
+
+
+```{r}
+yelp_numerical <- yelp_df %>% select(-1) %>% select_if(is.numeric)
+
+yelp_cor <- cor(yelp_numerical)
+
+yelp_corplot <- corrplot(yelp_cor,type = "lower", method = "circle")
+
+```
+There is correlation where it is expected as in hoursWeek and daysOpen, but there is also some noticable correlation between review count and the numCategories.
+
+```{r}
+yelp_df <- yelp_df %>% mutate(stars = factor(stars),is_open = factor(is_open),RestaurantsReservations = factor(RestaurantsReservations), OutdoorSeating =factor(OutdoorSeating), HappyHour = factor(HappyHour), DriveThru = factor(DriveThru), Caters = factor(Caters), RestaurantsDelivery = factor(RestaurantsDelivery), Alcohol = factor(Alcohol), Music = factor(Music), WiFi = factor(WiFi), RestaurantsGoodForGroups = factor(RestaurantsGoodForGroups), GoodForKids = factor(GoodForKids), WheelchairAccessible = factor(WheelchairAccessible), RestaurantsTableService = factor(RestaurantsTableService), HasTV = factor(HasTV), GoodForDessert =factor(GoodForDessert), GoodForBreakfast = factor(GoodForBreakfast), GoodForLunch = factor(GoodForLunch), GoodForBrunch = factor(GoodForBrunch), GoodForLatenight = factor(GoodForLatenight), RestaurantsPriceRange2=factor(RestaurantsPriceRange2))
+
+
+
+```
+
+
+```{r}
+yelp_numerical <- yelp_df %>% select(-1) %>% select_if(is.numeric)
+
+yelp_cor <- cor(yelp_numerical)
+
+yelp_corplot <- corrplot(yelp_cor,type = "lower", method = "circle")
+```
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill = Alcohol)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =GoodForKids)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =GoodForBrunch)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =GoodForLunch)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =GoodForLatenight)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =GoodForDessert)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =RestaurantsTableService)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =Music)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+```{r}
+ggplot(yelp_df, aes(y = as.numeric(stars), x = WheelchairAccessible)) +
+                     geom_boxplot()
+```
+```{r}
+yelp_df %>% ggplot(aes(x = log(review_count), y = factor(stars))) +
+                     geom_boxplot(fill = "lightblue")
+```
+```{r}
+yelp_df %>% ggplot(aes(y = hoursWeek, x = stars)) +
+                     geom_boxplot(fill = "lightblue")
+```
+
+```{r}
+ggplot(yelp_df, aes(x = stars, y = factor(daysOpen))) +
+                     geom_boxplot(fill = "lightblue")
+```
+
+
+
+
+```{r}
+yelp_df %>% ggplot(aes(x = stars, y = factor(GoodForLunch))) +
+                     geom_boxplot()
+```
+
+
+
+```{r}
+yelp_df %>% ggplot() +
+  geom_boxplot(mapping=aes(x = stars, y = HappyHour))
+
+```
+
+
+```{r}
+ggplot(yelp_df) +
+  geom_boxplot(mapping=aes(y = stars, x = factor(Alcohol)))
+```
+
+
+```{r}
+ggplot(yelp_df, aes(y = as.numeric(stars), x = factor(GoodForKids))) +
+                     geom_boxplot()
+```
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill =WheelchairAccessible)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+```{r}
+yelp_df %>% ggplot(aes(stars)) + 
+  geom_bar(aes(fill = HappyHour)) + 
+  scale_fill_manual(values = c("#000000", "#FB4F14"))
+
+```
+
+
+
+```{r}
+
+ggplot(yelp_df, aes(x = stars, y = factor(numCategories))) +
+  geom_boxplot()
+```
+```{r}
+ggplot(yelp_df, aes(y = stars, x = RestaurantsGoodForGroups)) +
+                     geom_boxplot() 
+  
+```
+
+
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = factor(HasTV))) +
+                     geom_boxplot() 
+  
+```
+
+
+```{r}
+ggplot(yelp_df, aes(x = stars, y = factor(daysOpen))) +
+                     geom_boxplot()
+```
+
+
+
+```{r}
+ggplot(yelp_df, aes(x = stars, y = factor(RestaurantsPriceRange2))) +
+                     geom_boxplot()
+```
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = GoodForBreakfast)) +
+                     geom_boxplot()
+```
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = GoodForLunch)) +
+                     geom_boxplot()
+```
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = GoodForBrunch)) +
+                     geom_boxplot()
+```
+
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = GoodForLatenight
+                    )) +
+                     geom_boxplot()
+```
+
+
+```{r}
+ggplot(yelp_df, aes(y = stars, x = DriveThru)) +
+                     geom_boxplot()
+```
+
+
+```{r}
+ggplot(yelp_df, aes(x = as.numeric(stars)
+                    , y = factor(RestaurantsDelivery))) +
+                     geom_boxplot()
+```
