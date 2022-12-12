@@ -1,0 +1,67 @@
+---
+title: "elastic net tuning Project"
+author: "Erasmo Rivas"
+date: "2022-12-04"
+output: pdf_document
+---
+
+```{r}
+yelp
+
+
+```
+
+```{r}
+elastic_net_spec <- multinom_reg(penalty = tune(),
+                                 mixture = tune()) %>% 
+  set_mode("classification") %>% 
+  set_engine("glmnet")
+
+en_wkflow <- workflow() %>% 
+  add_recipe(yelp_recipe) %>% 
+  add_model(elastic_net_spec)
+
+en_grid <- grid_regular(penalty(range = c(-5,5)),
+                        mixture(range = c(0,1)),
+                        levels = 10)
+```
+
+
+
+```{r}
+tune_res <- tune_grid(
+  en_wkflow,
+  resamples = yelp_folds,
+  grid = en_grid
+)
+
+```
+
+
+```{r}
+autoplot(tune_res)
+```
+
+
+```{r}
+best_model <- select_best(tune_res, metric = "roc_auc")
+en_final <- finalize_workflow(en_wkflow, best_model)
+
+en_final_fit <- fit(en_final, data = yelp_train)
+
+
+predicted_data <- augment(en_final_fit, new_data = yelp_test) %>% 
+  select(stars, starts_with(".pred"))
+
+```
+
+```{r}
+predicted_data %>% roc_auc(stars, .pred_1:.pred_5)
+
+
+```
+
+### Categories 
+
+The <code>numCategories</code> is an integer which represent the number of distinct categories that a restaurant may fall under. These Categories, span a wide and very inclusive range, some examples of the categories are: Fast-Food, Mexican, Italian, Steak-House, Asain-Cusine, SeaFood, etc. In a sense, this <code>numCategories</code> variable quantifies the versatility of a given restaurant. Thus, given a restaurant high versatility, it is not unreasonable to think, such a restaurant would have wide appeal, and this might manifest in the ratings. Thus we take a look at the following 
+

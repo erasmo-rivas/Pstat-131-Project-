@@ -1,0 +1,50 @@
+---
+title: "Knn"
+author: "Erasmo Rivas"
+date: "2022-12-08"
+output: html_document
+---
+
+```{r}
+librarr(kknn)
+```
+
+
+```{r}
+knn_model <- nearest_neighbor(neighbors = tune(), 
+                              mode = "classification") %>% 
+  set_engine("kknn")
+
+knn_wkflow <- workflow() %>% 
+  add_model(knn_model) %>% 
+  add_recipe(yelp_recipe)
+
+
+```
+
+```{r}
+knn_params <- parameters(knn_model)
+
+knn_grid <-grid_regular(knn_params, levels = 2 )
+
+
+```
+
+```{r}
+knn_tune <- knn_wkflow %>% 
+  tune_grid(
+    resamples = yelp_folds,
+    grid = knn_grid
+  )
+
+
+save(knn_tune, knn_wkflow, file = "knn.rda")
+```
+```{r}
+autoplot(knn_tune, metric = "roc_auc")
+```
+
+```{r}
+show_best(knn_tune, metric = "roc_auc")
+```
+

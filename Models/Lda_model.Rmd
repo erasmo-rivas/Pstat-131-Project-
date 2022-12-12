@@ -1,0 +1,157 @@
+---
+title: "lda_model"
+author: "Erasmo Rivas"
+date: "2022-12-04"
+output: html_document
+---
+
+
+```{r}
+library(ISLR)
+library(ISLR2)
+library(tidyverse)
+library(tidymodels)
+library(readr)
+library(corrr)
+library(corrplot)
+library(discrim)
+library(klaR)
+library(tune)
+#tidymodels_prefer()
+
+```
+
+
+
+
+```{r}
+yelp_df <- read.csv("ProjectDatasetComplete.csv", stringsAsFactors = F) #%>% mutate(stars = factor(stars),is_open = factor(is_open), RestaurantsPriceRange2 = factor(RestaurantsPriceRange2))
+
+yelp_df <- select(yelp_df,-1,-2,-3)
+yelp_df
+
+```
+
+```{r}
+yelp <- yelp_df %>% mutate(stars = factor(stars),is_open = factor(is_open),RestaurantsReservations = factor(RestaurantsReservations), OutdoorSeating =factor(OutdoorSeating), HappyHour = factor(HappyHour), DriveThru = factor(DriveThru), Caters = factor(Caters), RestaurantsDelivery = factor(RestaurantsDelivery), Alcohol = factor(Alcohol), Music = factor(Music), WiFi = factor(WiFi), RestaurantsGoodForGroups = factor(RestaurantsGoodForGroups), GoodForKids = factor(GoodForKids), WheelchairAccessible = factor(WheelchairAccessible), RestaurantsTableService = factor(RestaurantsTableService), HasTV = factor(HasTV), GoodForDessert =factor(GoodForDessert), GoodForBreakfast = factor(GoodForBreakfast), GoodForLunch = factor(GoodForLunch), GoodForBrunch = factor(GoodForBrunch), GoodForLatenight = factor(GoodForLatenight), RestaurantsPriceRange2=factor(RestaurantsPriceRange2))
+
+?sample_n
+yelp <- sample_n(yelp, 1000, strata = stars)
+```
+
+
+```{r}
+set.seed(1111)
+
+yelp_split <- initial_split(yelp, prop = 0.75, strata = stars)
+
+yelp_train <- training(yelp_split)
+yelp_test <- testing(yelp_split)
+
+dim(yelp_train)
+dim(yelp_test)
+```
+
+
+```{r}
+yelp_recipe <- recipe(stars ~ ., data = yelp_train) %>% step_dummy(all_nominal_predictors()) %>% 
+  step_normalize(all_predictors())
+```
+
+
+```{r}
+yelp_folds <- vfold_cv(yelp_train, v= 10, strata = stars)
+```
+
+Logistic Regression 
+
+
+
+```{r}
+
+
+lda_mod <- discrim_linear() %>% 
+  set_engine("MASS") %>% 
+  set_mode("classification") 
+
+lda_wkflow <- workflow() %>% 
+  add_recipe(yelp_recipe) %>% 
+  add_model(lda_mod) 
+
+qda_mod <- discrim_quad() %>% 
+  set_engine("MASS") %>% 
+  set_mode("classification")
+
+qda_wkflow <- workflow() %>% 
+  add_recipe(yelp_recipe) %>% 
+  add_model(qda_mod)
+  
+
+```
+
+
+
+```{r}
+control <- control_resamples(save_pred = TRUE)
+```
+
+
+
+
+
+
+```{r}
+lda_fit <- fit_resamples(lda_wkflow, 
+                         resamples = yelp_folds,
+                         control = control_resamples())
+
+```
+
+
+
+```{r}
+qda_fit <- fit_resamples(qda_wkflow,
+                         resamples = yelp_folds, 
+                         control = control_resamples())
+```
+
+```{r}
+collect_metrics(lda_fit)
+```
+
+
+```{r}
+collect_metrics(qda_fit)
+```
+
+
+
+```{r}
+lda_fit_train <- fit(lda_wkflow, yelp_train)
+
+```
+
+
+
+```{r}
+predicted <- augment(lda_fit_train, new_data = yelp_test) %>% select(stars, starts_with(".pred"))
+```
+
+
+```{r}
+
+predicted %>% roc_auc(stars, .pred_1:.pred_5)
+```
+
+```{r}
+predicted %>% roc_curve(stars , .pred_1:.pred_5) %>% autoplot()
+```
+
+
+```{r}
+predicted %>% conf_mat(truth = stars, estimate = .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+
+
